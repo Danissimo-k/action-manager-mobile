@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../utils/hex_color.dart';
 
+enum ItemType { currency, stock }
+
 class ColumnItemCard extends StatelessWidget {
   String imageLink;
   String itemName;
@@ -10,6 +12,7 @@ class ColumnItemCard extends StatelessWidget {
   int? quantity;
   double? price;
   double? sumPrice;
+  ItemType itemType;
 
   ColumnItemCard({
     Key? key,
@@ -17,6 +20,7 @@ class ColumnItemCard extends StatelessWidget {
     required this.itemName,
     required this.icon,
     required this.functionHandler,
+    required this.itemType,
     this.quantity,
     this.price,
     this.sumPrice,
@@ -41,24 +45,20 @@ class ColumnItemCard extends StatelessWidget {
                 ),
               ),
             ),
-            Flexible(
+            Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(left: 10),
-                child: Row(children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 30),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ..._cardQuantityInfo(
-                            itemName: itemName,
-                            quantity: quantity,
-                            price: price)
-                      ],
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 30),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ..._cardQuantityInfo(
+                          itemName: itemName, quantity: quantity, price: price)
+                    ],
                   ),
-                ]),
+                ),
               ),
             ),
             Text(
@@ -93,6 +93,7 @@ class ColumnItemCard extends StatelessWidget {
     List<Widget> arr = [];
     arr.add(Text(
       itemName,
+      overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontFamily: 'Poppins',
         color: HexColor.fromHex("#464948"),
@@ -101,9 +102,25 @@ class ColumnItemCard extends StatelessWidget {
         fontWeight: FontWeight.w600,
       ),
     ));
-    if (quantity != null) {
+    if (quantity != null && price != null) {
       arr.add(Text(
-        "${this.quantity} · ${this.price}",
+        "${this.quantity} ${itemType == ItemType.stock ? "шт" : ""}. · ${this.price}₽",
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+        ),
+      ));
+    } else if (price != null) {
+      arr.add(Text(
+        "${this.price}₽",
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+        ),
+      ));
+    } else if (quantity != null) {
+      arr.add(Text(
+        "${this.quantity} ${itemType == ItemType.stock ? "шт" : ""}",
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w500,

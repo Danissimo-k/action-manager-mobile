@@ -1,13 +1,14 @@
 import 'package:action_manager/utils/hex_color.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import 'package:yandex_mapkit/yandex_mapkit.dart';
 
-import '../widgets/card.dart';
-import '../widgets/column_with_title.dart';
+import '../../controllers/map_controller.dart';
 
 class MapPage extends StatelessWidget {
   MapPage({Key? key}) : super(key: key);
 
-  final TextEditingController mapController = TextEditingController();
+  final _mapController = MapController.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -19,23 +20,60 @@ class MapPage extends StatelessWidget {
         padding: const EdgeInsets.only(top: 16, left: 10, right: 10),
         child: Column(
           children: [
-            TextField(
-              decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                Flexible(
+                  child: DropdownSearch<SearchItem>(
+                    asyncItems: (query) => _mapController.searchAsync(query),
+                    onChanged: (item) {
+                      if(item != null){
+                        _mapController.selectedPoint(item);
+                      }
+                    },
+                    itemAsString: (item) => item.toponymMetadata?.address.formattedAddress ?? item.name,
+                    popupProps: PopupProps.dialog(
+                      searchDelay: const Duration(milliseconds: 1500),
+                      showSearchBox: true,
+                      isFilterOnline: true,
+                      searchFieldProps: TextFieldProps(
+                        controller: _mapController.queryTextController,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                width: 1, color: HexColor.fromHex("#554AF0")),
+                          ),
+                        ),
+                      ),
+                    ),
+                    dropdownDecoratorProps: DropDownDecoratorProps(
+                      dropdownSearchDecoration: InputDecoration(
+                        labelText: "Выберите ваше местоположение",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                              width: 1, color: HexColor.fromHex("#554AF0")),
+                        )
+                      ),
+                    ),
                   ),
-                  hintText: "Print country",
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                        width: 1, color: HexColor.fromHex("#554AF0")),
-                  )
-              ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             Expanded(
-              // height: MediaQuery.of(context).size.height / 1.4,
-              child: Container(width: double.infinity, child: FittedBox(child: Image.asset("lib/images/map.jpeg"), fit: BoxFit.fill,)),
+              child: YandexMap(
+                onMapCreated: (controller) {
+                  _mapController.yandexMapController(controller);
+                  _mapController.init();
+                },
+              ),
             )
           ],
         ),

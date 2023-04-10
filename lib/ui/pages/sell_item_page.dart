@@ -1,28 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
+import 'package:get/get.dart';
 
+import '../../controllers/buy_item_controller.dart';
+import '../../controllers/portfolio_controller.dart';
+import '../../models/currency.dart';
+import '../../models/stock.dart';
 import '../../utils/hex_color.dart';
 
-class SellItemPage extends StatefulWidget {
-  const SellItemPage({Key? key}) : super(key: key);
+class SellItemPage extends StatelessWidget {
+  SellItemPage({Key? key}) : super(key: key);
 
-  @override
-  State<SellItemPage> createState() => _SellItemPageState();
-}
-
-class _SellItemPageState extends State<SellItemPage> {
-  int _quantity = 1;
-  final quantityController = TextEditingController();
+  final _buyItemController = BuyItemController.instance;
+  final _portfolioController = PortfolioController.instance;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    print(_buyItemController.figi ?? "");
+    return Obx(() => _buyItemController.item.value == null
+        ? const Center(
+      child: CircularProgressIndicator(),
+    )
+        : Scaffold(
       appBar: AppBar(
-        title: const Text("Sell actions"),
+        title: const Text("Продажа"),
       ),
       body: Padding(
-        padding: EdgeInsets.only(top: 25, left: 35, right: 35),
+        padding: const EdgeInsets.only(top: 25, left: 35, right: 35),
         child: Column(
           children: [
             Container(
@@ -38,9 +42,9 @@ class _SellItemPageState extends State<SellItemPage> {
               ),
             ),
             const SizedBox(height: 15),
-            const Text(
-              "Rubles",
-              style: TextStyle(
+            Text(
+              _buyItemController.item.value!.name,
+              style: const TextStyle(
                 fontSize: 25,
                 fontFamily: "Poppins",
                 fontWeight: FontWeight.w700,
@@ -50,8 +54,19 @@ class _SellItemPageState extends State<SellItemPage> {
             Container(
                 alignment: AlignmentDirectional.topStart,
                 child: Text(
-                  "Price: 360",
-                  style: TextStyle(
+                  "Ваш баланс: ${_portfolioController.balance}₽",
+                  style: const TextStyle(
+                    fontSize: 20,
+                  ),
+                )),
+            const SizedBox(
+              height: 15,
+            ),
+            Container(
+                alignment: AlignmentDirectional.topStart,
+                child: Text(
+                  "Цена за лот: ${_buyItemController.item.value!.faceValue}₽",
+                  style: const TextStyle(
                     fontSize: 20,
                   ),
                 )),
@@ -63,23 +78,23 @@ class _SellItemPageState extends State<SellItemPage> {
               children: [
                 IconButton(
                   onPressed: () {
-                    setState(() {
-                      _quantity--;
-                      quantityController.text = '$_quantity';
-                    });
+                    if(_buyItemController.counter.value == 0) return;
+
+                    _buyItemController.textCounterController.text =
+                    "${_buyItemController.counter.value - 1}";
+                    _buyItemController.counter.value--;
                   },
-                  padding: EdgeInsets.all(0),
-                  icon: Icon(Icons.remove),
+                  padding: const EdgeInsets.all(0),
+                  icon: const Icon(Icons.remove),
                   splashRadius: 1,
                 ),
                 Flexible(
                   child: TextField(
-                    controller: quantityController,
+                    controller: _buyItemController.textCounterController,
                     keyboardType: TextInputType.number,
                     onChanged: (text) {
-                      setState(() {
-                        _quantity = int.tryParse(text) ?? 0;
-                      });
+                      _buyItemController.counter.value =
+                          int.tryParse(text) ?? 0;
                     },
                     inputFormatters: <TextInputFormatter>[
                       FilteringTextInputFormatter.digitsOnly
@@ -88,18 +103,21 @@ class _SellItemPageState extends State<SellItemPage> {
                 ),
                 IconButton(
                   onPressed: () {
-                    _quantity++;
-                    quantityController.text = '$_quantity';
+                    if(_buyItemController.counter.value == _buyItemController.itemQuantity) return;
+
+                    _buyItemController.textCounterController.text = "${_buyItemController.counter.value + 1}";
+                    _buyItemController.counter.value++;
                   },
-                  padding: EdgeInsets.all(0),
-                  icon: Icon(Icons.add_outlined),
+                  padding: const EdgeInsets.all(0),
+                  icon: const Icon(Icons.add_outlined),
                   splashRadius: 1,
                 ),
               ],
             ),
             const SizedBox(height: 20),
             Text(
-              "Available slots: 120",
+              "Доступно для продажи: ${_buyItemController.itemQuantity}",
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
                 color: HexColor.fromHex("#686777"),
@@ -108,21 +126,65 @@ class _SellItemPageState extends State<SellItemPage> {
             const Spacer(),
             Container(
               width: double.infinity,
-              height: MediaQuery.of(context).size.height /10,
+              height: MediaQuery.of(context).size.height / 10,
               child: ElevatedButton(
-                onPressed: () {
-                  context.pop();
-                },
-                style: ElevatedButton.styleFrom(
+                onPressed: () async {
+                  if (_buyItemController.counter.value == 0 || _buyItemController.counter.value > _buyItemController.itemQuantity) {
+                    Get.snackbar(
+                      "Ошибка",
+                      "Выберите корректное количество для продажи",
+                      snackPosition: SnackPosition.TOP,
+                      backgroundColor: Colors.red.withOpacity(0.1),
+                      colorText: Colors.red,
+                    );
+                    return;
+                  }
+                  print('type: ${_buyItemController.type}');
+                  try {
+                    if (_buyItemController.type == "stock") {
+                      await _portfolioController.buyOrSellStock(
+                          (_buyItemController.item.value as StockModel).figi,
+                          _buyItemController.itemQuantity - _buyItemController.counter.value,
+                          (_portfolioController.balance +_buyItemController.counter.value *_buyItemController.item.value!.faceValue)
 
-                ),
-                child: const Text("Sell"),
+                      );
+                    } else if (_buyItemController.type == "currency") {
+                      await _portfolioController.buyOrSellCurrency(
+                        (_buyItemController.item.value as CurrencyModel).ticker,
+                        _buyItemController.itemQuantity - _buyItemController.counter.value,
+                        (_portfolioController.balance + _buyItemController.counter.value * _buyItemController.item.value!.faceValue),
+                      );
+                    }
+                    Get.back();
+                    Get.snackbar(
+                      "Успех",
+                      "Продажа успешно завершена",
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.green.withOpacity(0.1),
+                      colorText: Colors.green,
+                    );
+                  } catch (e) {
+                    print(e);
+                    Get.snackbar(
+                      "Ошибка",
+                      "Что-то пошло не так, свяжитесь с разработчиком",
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.red.withOpacity(0.1),
+                      colorText: Colors.red,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(),
+                child: Text(
+                    "Продать ${_buyItemController.counter.value * _buyItemController.item.value!.faceValue}₽"),
               ),
             ),
-            const SizedBox(height: 20, ),
+            const SizedBox(
+              height: 20,
+            ),
           ],
         ),
       ),
-    );
+    ));
   }
 }

@@ -7,13 +7,13 @@ class PortfolioTabRoutes {
   static Route<dynamic>? generate(RouteSettings settings) {
     switch (settings.name) {
       case "/":
-        return MaterialPageRoute(builder: (_) => const Portfolio());
+        return MaterialPageRoute(builder: (_) => Portfolio());
       case "/sell":
-        return MaterialPageRoute(builder: (_) => const SellItemPage());
+        return MaterialPageRoute(builder: (_) => SellItemPage());
       case "/buy":
-        return MaterialPageRoute(builder: (_) => const BuyItemPage());
+        return MaterialPageRoute(builder: (_) => BuyItemPage());
       default:
-        return MaterialPageRoute(builder: (_) => const Portfolio());
+        return MaterialPageRoute(builder: (_) => Portfolio());
     }
   }
 }

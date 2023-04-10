@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 class PasswordTextField extends StatefulWidget {
   String hintText;
   TextEditingController controller;
-  String showPassText;
 
   PasswordTextField({
     super.key,
     required this.hintText,
     required this.controller,
-    required this.showPassText,
   });
 
   @override
@@ -39,7 +37,7 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
             onPressed: () {
               changeShowPassState();
             },
-            child: _hidePass ? const Text("Show") : const Text("Hide")
+            child: _hidePass ? const Text("Показать") : const Text("Скрыть")
         ),
       ),
     );
