@@ -1,4 +1,4 @@
-# ToDo Application
+# Action Manager
 
 ## Monetization Plan
 To monetize the application, you can connect ads or make the application itself paid, or both.
