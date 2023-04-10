@@ -30,7 +30,7 @@ class ColumnItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       child: Container(
-        height: MediaQuery.of(context).size.height / 7,
+        height: MediaQuery.of(context).size.height / 6.8,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
